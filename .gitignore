@@ -1,4 +1,34 @@
-*.kaggle.json
+# LFS tracked files
+*.h5 filter=lfs diff=lfs merge=lfs
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+build/
+
+# Virtual Environment
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Data
 data/raw/
 data/processed/
-kaggle.json
+
+# Logs
+*.log
+
+# Local development
+.env
+.env.local
+
+# Jupyter
+.ipynb_checkpoints
+
+# Training outputs
+models/*.png
+models/*.txt
