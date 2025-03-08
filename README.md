@@ -75,7 +75,7 @@ python src/web/app.py
 3. Upload a chest X-ray image for instant prediction
 4. View Grad-CAM visualizations highlighting areas of interest
 
-![Grad-CAM Visualization](static/static.jpeg)
+![Grad-CAM Visualization](src/web/static/uploads/static.jpeg)
 *Heatmap showing model focus areas for pneumonia detection*
 
 ## Model Performance

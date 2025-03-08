@@ -18,7 +18,6 @@ venv/
 # Data
 data/raw/
 data/processed/
-
 # Logs
 *.log
 
@@ -32,3 +31,6 @@ data/processed/
 # Training outputs
 models/*.png
 models/*.txt
+
+#ignore the kaggle api
+kaggle.json
