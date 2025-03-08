@@ -1,6 +1,6 @@
 # Deep Learning Libraries
-tensorflow==2.10.0
-keras==2.10.0
+tensorflow>=2.13.0
+keras>=2.13.0
 numpy==1.23.5
 scipy==1.9.3
 matplotlib==3.6.2
@@ -15,7 +15,7 @@ flask-cors==3.0.10
 gunicorn==20.1.0
 
 # Visualization
-gradcam==1.0.0
+# gradcam==1.0.0 - Removed as we're using custom implementation
 
 # Utilities
 tqdm==4.64.1
