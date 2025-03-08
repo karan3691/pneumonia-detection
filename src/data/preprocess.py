@@ -16,8 +16,10 @@ def preprocess_images(img_size=(224, 224)):
     Args:
         img_size (tuple): Target image size (height, width)
     """
-    # Define paths
-    data_dir = Path('../../data')
+    # Define paths using absolute paths based on the current file location
+    current_dir = Path(__file__).resolve().parent
+    project_root = current_dir.parent.parent
+    data_dir = project_root / 'data'
     raw_dir = data_dir / 'raw' / 'chest_xray'
     processed_dir = data_dir / 'processed'
     

@@ -10,7 +10,10 @@ def download_dataset():
     Requires Kaggle API credentials to be set up.
     """
     # Define paths
-    data_dir = Path('../../data')
+    # Use absolute paths based on the current file location
+    current_dir = Path(__file__).resolve().parent
+    project_root = current_dir.parent.parent
+    data_dir = project_root / 'data'
     raw_dir = data_dir / 'raw'
     processed_dir = data_dir / 'processed'
     

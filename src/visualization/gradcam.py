@@ -17,6 +17,20 @@ def make_gradcam_heatmap(img_array, model, last_conv_layer_name, pred_index=None
     Returns:
         heatmap: Grad-CAM heatmap
     """
+    try:
+        # First try to get the layer by name
+        last_conv_layer = model.get_layer(last_conv_layer_name)
+    except ValueError:
+        # If layer name not found, try to find the last convolutional layer
+        conv_layers = [layer.name for layer in model.layers 
+                      if 'conv' in layer.name.lower() or 
+                         isinstance(layer, tf.keras.layers.Conv2D)]
+        if not conv_layers:
+            raise ValueError("Could not find any convolutional layer in the model")
+        last_conv_layer_name = conv_layers[-1]
+        last_conv_layer = model.get_layer(last_conv_layer_name)
+        print(f"Using {last_conv_layer_name} as the last convolutional layer")
+    
     # Create a model that maps the input image to the activations of the last conv layer
     grad_model = Model(
         inputs=[model.inputs],

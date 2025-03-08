@@ -20,13 +20,20 @@ app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg'}
 os.makedirs(os.path.join(app.root_path, app.config['UPLOAD_FOLDER']), exist_ok=True)
 
 # Load the trained model
-model_path = Path('../../models/pneumonia_model_final.h5')
-if not model_path.exists():
-    print(f"Model not found at {model_path}. Please train the model first.")
+current_dir = Path(__file__).resolve().parent
+project_root = current_dir.parent.parent
+model_path = project_root / 'models' / 'pneumonia_model_final.h5'
+
+try:
+    if not model_path.exists():
+        print(f"Model not found at {model_path}. Please train the model first.")
+        model = None
+    else:
+        model = tf.keras.models.load_model(model_path)
+        print("Model loaded successfully!")
+except Exception as e:
+    print(f"Error loading model: {str(e)}")
     model = None
-else:
-    model = tf.keras.models.load_model(model_path)
-    print("Model loaded successfully!")
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
@@ -74,45 +81,52 @@ def predict():
         return jsonify({'error': 'No selected file'})
     
     if file and allowed_file(file.filename):
-        # Save the uploaded file
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'], filename)
-        file.save(file_path)
-        
-        # Preprocess the image
-        img = preprocess_image(file_path)
-        
-        # Make prediction
-        prediction = model.predict(img)[0][0]
-        label = "PNEUMONIA" if prediction > 0.5 else "NORMAL"
-        probability = float(prediction) if prediction > 0.5 else float(1 - prediction)
-        
-        # Generate Grad-CAM visualization
         try:
-            _, _, superimposed_img, _, _ = apply_gradcam(
-                file_path, model, last_conv_layer_name="conv5_block3_out"
-            )
+            # Save the uploaded file
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
             
-            # Save the visualization
-            vis_filename = f"gradcam_{filename}"
-            vis_path = os.path.join(app.config['UPLOAD_FOLDER'], vis_filename)
-            cv2.imwrite(os.path.join(app.root_path, vis_path), 
-                       cv2.cvtColor(superimposed_img, cv2.COLOR_RGB2BGR))
+            # Preprocess the image
+            img = preprocess_image(file_path)
             
-            return jsonify({
-                'success': True,
-                'label': label,
-                'probability': probability,
-                'image_path': os.path.join(app.config['UPLOAD_FOLDER'], filename),
-                'visualization_path': vis_path
-            })
+            # Make prediction
+            prediction = model.predict(img)[0][0]
+            label = "PNEUMONIA" if prediction > 0.5 else "NORMAL"
+            probability = float(prediction) if prediction > 0.5 else float(1 - prediction)
+            
+            # Generate Grad-CAM visualization
+            try:
+                _, _, superimposed_img, _, _ = apply_gradcam(
+                    file_path, model, last_conv_layer_name="conv5_block3_out"
+                )
+                
+                # Save the visualization
+                vis_filename = f"gradcam_{filename}"
+                vis_path = os.path.join(app.config['UPLOAD_FOLDER'], vis_filename)
+                cv2.imwrite(os.path.join(app.root_path, vis_path), 
+                           cv2.cvtColor(superimposed_img, cv2.COLOR_RGB2BGR))
+                
+                return jsonify({
+                    'success': True,
+                    'label': label,
+                    'probability': probability,
+                    'image_path': os.path.join(app.config['UPLOAD_FOLDER'], filename),
+                    'visualization_path': vis_path
+                })
+            except Exception as e:
+                print(f"Visualization error: {str(e)}")
+                return jsonify({
+                    'success': True,
+                    'label': label,
+                    'probability': probability,
+                    'image_path': os.path.join(app.config['UPLOAD_FOLDER'], filename),
+                    'error': f"Could not generate visualization: {str(e)}"
+                })
         except Exception as e:
             return jsonify({
-                'success': True,
-                'label': label,
-                'probability': probability,
-                'image_path': os.path.join(app.config['UPLOAD_FOLDER'], filename),
-                'error': f"Could not generate visualization: {str(e)}"
+                'success': False,
+                'error': f"Error processing image: {str(e)}"
             })
     
     return jsonify({'error': 'Invalid file format. Please upload a PNG, JPG, or JPEG image.'})

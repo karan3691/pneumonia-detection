@@ -12,7 +12,7 @@ import seaborn as sns
 # Import our model architecture
 from model import create_model, fine_tune_model
 
-def train_model(data_dir='../../data/processed', img_size=(224, 224), batch_size=32, epochs=20, fine_tune_epochs=10):
+def train_model(data_dir=None, img_size=(224, 224), batch_size=32, epochs=20, fine_tune_epochs=10):
     """
     Train the pneumonia detection model using the preprocessed data.
     
@@ -27,7 +27,14 @@ def train_model(data_dir='../../data/processed', img_size=(224, 224), batch_size
         model: Trained Keras model
         history: Training history
     """
-    data_dir = Path(data_dir)
+    # Define paths using absolute paths based on the current file location
+    current_dir = Path(__file__).resolve().parent
+    project_root = current_dir.parent.parent
+    
+    if data_dir is None:
+        data_dir = project_root / 'data' / 'processed'
+    else:
+        data_dir = Path(data_dir)
     
     # Check if processed data exists
     if not data_dir.exists():
@@ -38,13 +45,16 @@ def train_model(data_dir='../../data/processed', img_size=(224, 224), batch_size
     # Create data generators with augmentation for training
     train_datagen = ImageDataGenerator(
         rescale=1./255,
-        rotation_range=20,
-        width_shift_range=0.1,
-        height_shift_range=0.1,
-        shear_range=0.1,
-        zoom_range=0.1,
+        rotation_range=30,  # Increased rotation range
+        width_shift_range=0.15,  # Increased shift range
+        height_shift_range=0.15,  # Increased shift range
+        shear_range=0.15,  # Increased shear range
+        zoom_range=0.2,  # Increased zoom range
         horizontal_flip=True,
+        vertical_flip=False,  # X-rays shouldn't be flipped vertically
+        brightness_range=[0.8, 1.2],  # Add brightness variation
         fill_mode='nearest'
+        # class_mode is not a parameter for ImageDataGenerator, it belongs in flow_from_directory
     )
     
     # Just rescaling for validation and test data
@@ -82,7 +92,7 @@ def train_model(data_dir='../../data/processed', img_size=(224, 224), batch_size
     model = create_model(input_shape=(img_size[0], img_size[1], 1))
     
     # Define callbacks
-    checkpoint_dir = Path('../../models')
+    checkpoint_dir = project_root / 'models'
     os.makedirs(checkpoint_dir, exist_ok=True)
     
     checkpoint = ModelCheckpoint(
@@ -135,8 +145,23 @@ def train_model(data_dir='../../data/processed', img_size=(224, 224), batch_size
     )
     
     # Combine histories
-    for key in history.history.keys():
-        history.history[key].extend(fine_tune_history.history[key])
+    # Handle potential metric name differences between initial training and fine-tuning
+    for key in list(history.history.keys()):
+        # Find matching keys in fine_tune_history, accounting for potential suffix differences
+        if key in fine_tune_history.history:
+            history.history[key].extend(fine_tune_history.history[key])
+        else:
+            # Look for keys with suffixes (e.g., 'precision' vs 'precision_1')
+            base_key = key.split('_')[0] if '_' in key else key
+            matching_keys = [k for k in fine_tune_history.history.keys() 
+                            if k.startswith(base_key)]
+            
+            if matching_keys:
+                # Use the first matching key
+                history.history[key].extend(fine_tune_history.history[matching_keys[0]])
+                print(f"Matched '{key}' with '{matching_keys[0]}' in fine-tuning history.")
+            else:
+                print(f"Warning: Could not find matching key for '{key}' in fine-tuning history.")
     
     # Save the final model
     model.save(checkpoint_dir / 'pneumonia_model_final.h5')
@@ -197,7 +222,7 @@ def evaluate_model(model, test_generator, output_dir):
     
     print(f"Evaluation metrics saved to {output_dir / 'evaluation_metrics.txt'}")
 
-def plot_training_history(history, output_dir='../../models'):
+def plot_training_history(history, output_dir=None):
     """
     Plot the training history and save the plots.
     
@@ -205,7 +230,14 @@ def plot_training_history(history, output_dir='../../models'):
         history: Training history object
         output_dir: Directory to save plots
     """
-    output_dir = Path(output_dir)
+    # Define paths using absolute paths if output_dir is not provided
+    if output_dir is None:
+        current_dir = Path(__file__).resolve().parent
+        project_root = current_dir.parent.parent
+        output_dir = project_root / 'models'
+    else:
+        output_dir = Path(output_dir)
+        
     os.makedirs(output_dir, exist_ok=True)
     
     # Plot accuracy

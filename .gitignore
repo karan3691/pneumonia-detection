@@ -1,1 +1,4 @@
 *.kaggle.json
+data/raw/
+data/processed/
+kaggle.json

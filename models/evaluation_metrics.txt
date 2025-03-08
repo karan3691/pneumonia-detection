@@ -1,0 +1,14 @@
+Test Accuracy: 0.8413
+Test Precision: 0.8799
+Test Recall: 0.8641
+Test F1-Score: 0.8719
+
+Classification Report:
+              precision    recall  f1-score   support
+
+      NORMAL       0.78      0.80      0.79       234
+   PNEUMONIA       0.88      0.86      0.87       390
+
+    accuracy                           0.84       624
+   macro avg       0.83      0.83      0.83       624
+weighted avg       0.84      0.84      0.84       624

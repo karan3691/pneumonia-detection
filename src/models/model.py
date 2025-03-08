@@ -31,12 +31,17 @@ def create_model(input_shape=(224, 224, 1), learning_rate=0.0001):
     for layer in base_model.layers:
         layer.trainable = False
     
-    # Add custom top layers for binary classification
+    # Add custom top layers for binary classification with batch normalization
     x = base_model.output
     x = GlobalAveragePooling2D()(x)
-    x = Dense(512, activation='relu')(x)
-    x = Dropout(0.5)(x)  # Add dropout to prevent overfitting
-    x = Dense(128, activation='relu')(x)
+    x = Dense(512, activation=None)(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.Activation('relu')(x)
+    x = Dropout(0.4)(x)  # Slightly reduced dropout rate
+    x = Dense(128, activation=None)(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.Activation('relu')(x)
+    x = Dropout(0.3)(x)  # Add dropout to this layer as well
     predictions = Dense(1, activation='sigmoid')(x)  # Binary classification (normal vs pneumonia)
     
     # Create the model
@@ -46,7 +51,8 @@ def create_model(input_shape=(224, 224, 1), learning_rate=0.0001):
     model.compile(
         optimizer=Adam(learning_rate=learning_rate),
         loss='binary_crossentropy',
-        metrics=['accuracy', tf.keras.metrics.Precision(), tf.keras.metrics.Recall()]
+        metrics=['accuracy', tf.keras.metrics.Precision(), tf.keras.metrics.Recall(), 
+                tf.keras.metrics.AUC()]  # Added AUC metric
     )
     
     return model
@@ -63,14 +69,38 @@ def fine_tune_model(model, num_layers_to_unfreeze=10):
         model: Fine-tuned model
     """
     # Find the ResNet50 base model within our model
+    base_model = None
     for layer in model.layers:
         if hasattr(layer, 'layers'):  # This is our base_model
-            base_model = layer
-            break
+            if len(layer.layers) > 0 and 'resnet' in layer.name.lower():
+                base_model = layer
+                break
     
-    # Unfreeze the top layers of the base model
-    for layer in base_model.layers[-num_layers_to_unfreeze:]:
-        layer.trainable = True
+    # If we couldn't find the base model by name, try to find it by layer count
+    if base_model is None:
+        for layer in model.layers:
+            if hasattr(layer, 'layers') and len(layer.layers) > 50:  # ResNet50 has many layers
+                base_model = layer
+                break
+    
+    # If we still couldn't find the base model, use the first layer that has layers
+    if base_model is None:
+        for layer in model.layers:
+            if hasattr(layer, 'layers') and len(layer.layers) > 0:
+                base_model = layer
+                break
+    
+    # If we found a base model, unfreeze the top layers
+    if base_model is not None:
+        # Unfreeze the top layers of the base model
+        for layer in base_model.layers[-num_layers_to_unfreeze:]:
+            layer.trainable = True
+    else:
+        print("Warning: Could not identify base model for fine-tuning. Skipping layer unfreezing.")
+        # Make some layers of the main model trainable as a fallback
+        for layer in model.layers[-5:]:
+            if hasattr(layer, 'trainable'):
+                layer.trainable = True
     
     # Recompile the model with a lower learning rate for fine-tuning
     model.compile(
