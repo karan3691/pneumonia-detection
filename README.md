@@ -23,7 +23,7 @@ pneumonia/
 
 ## Features
 
-- Deep learning model (CNN) achieving 92.5% test accuracy
+- Deep learning model (CNN) achieving 84.1% test accuracy
 - Transfer learning with pre-trained ResNet-50 architecture
 - Interactive web interface with Grad-CAM visualizations
 - Comprehensive data augmentation pipeline
@@ -82,10 +82,10 @@ python src/web/app.py
 
 | Metric        | Score   |
 |---------------|---------|
-| Accuracy      | 92.5%   |
-| Precision     | 94.1%   |
-| Recall        | 91.8%   |
-| F1-score      | 92.9%   |
+| Accuracy      | 84.1%   |
+| Precision     | 87.9%   |
+| Recall        | 86.4%   |
+| F1-score      | 87.2%   |
 
 ## Deployment
 
